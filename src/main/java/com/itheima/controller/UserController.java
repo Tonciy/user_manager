@@ -29,5 +29,10 @@ public class UserController {
     public  void downLoadXlsByJxl(HttpServletResponse response) throws Exception{
         userService.downLoadXlsByJxl(response);
     }
+    @PostMapping(value = "uploadExcel",name = "上传Excel数据")
+    public  void uploadExcel(MultipartFile file) throws Exception{
+        userService.uploadExcel(file);
+    }
+
 
 }

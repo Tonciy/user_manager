@@ -11,12 +11,18 @@ import jxl.write.Label;
 import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import org.apache.ibatis.annotations.Case;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
+import java.io.FileInputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -27,7 +33,7 @@ public class UserService {
     private UserMapper userMapper;
 
     // 处理日期转化
-    private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     public List<User> findAll() {
         return userMapper.selectAll();
@@ -102,5 +108,39 @@ public class UserService {
         workbook.write();
         workbook.close();
         outputStream.close();
+    }
+
+    public void uploadExcel(MultipartFile file) throws Exception{
+        // 获取工作簿
+        XSSFWorkbook workbook = new XSSFWorkbook(file.getInputStream());
+        // 获取对应工作表
+        XSSFSheet sheet = workbook.getSheetAt(0);
+        // 获取数据最后一行角标
+        int lastRowIndex = sheet.getLastRowNum();
+        // 获取数据
+        User user = null;
+        XSSFRow row = null;
+        for (int i = 1; i <= lastRowIndex; i++) {
+            row = sheet.getRow(i);
+            String userName = row.getCell(0).getStringCellValue();
+            String phone = row.getCell(1).getStringCellValue();
+            String province = row.getCell(2).getStringCellValue();
+            String city = row.getCell(3).getStringCellValue();
+            Integer salary = ((Double)(row.getCell(4).getNumericCellValue())).intValue();
+            Date hireDate = simpleDateFormat.parse(row.getCell(5).getStringCellValue());
+            Date birthday = simpleDateFormat.parse(row.getCell(6).getStringCellValue());
+            String address = row.getCell(7).getStringCellValue();
+            user = new User();
+            user.setUserName(userName);
+            user.setPhone(phone);
+            user.setProvince(province);
+            user.setCity(city);
+            user.setSalary(salary);
+            user.setHireDate(hireDate);
+            user.setBirthday(birthday);
+            user.setAddress(address);
+            System.out.println(user);
+            userMapper.insert(user);
+        }
     }
 }
