@@ -12,6 +12,7 @@ import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import org.apache.ibatis.annotations.Case;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -40,12 +41,12 @@ public class UserService {
     }
 
     public List<User> findPage(Integer page, Integer pageSize) {
-        PageHelper.startPage(page,pageSize);  //开启分页
+        PageHelper.startPage(page, pageSize);  //开启分页
         Page<User> userPage = (Page<User>) userMapper.selectAll(); //实现查询
         return userPage.getResult();
     }
 
-    public void downLoadXlsByJxl(HttpServletResponse response) throws  Exception{
+    public void downLoadXlsByJxl(HttpServletResponse response) throws Exception {
         // 获取输出流
         ServletOutputStream outputStream = response.getOutputStream();
         // 创建工作簿
@@ -75,7 +76,7 @@ public class UserService {
         for (User user : userList) {
             for (int i = 0; i < titles.length; i++) {
                 String context = "";
-                switch (i){
+                switch (i) {
                     case 0:
                         context = user.getId().toString();
                         break;
@@ -110,7 +111,7 @@ public class UserService {
         outputStream.close();
     }
 
-    public void uploadExcel(MultipartFile file) throws Exception{
+    public void uploadExcel(MultipartFile file) throws Exception {
         // 获取工作簿
         XSSFWorkbook workbook = new XSSFWorkbook(file.getInputStream());
         // 获取对应工作表
@@ -126,7 +127,7 @@ public class UserService {
             String phone = row.getCell(1).getStringCellValue();
             String province = row.getCell(2).getStringCellValue();
             String city = row.getCell(3).getStringCellValue();
-            Integer salary = ((Double)(row.getCell(4).getNumericCellValue())).intValue();
+            Integer salary = ((Double) (row.getCell(4).getNumericCellValue())).intValue();
             Date hireDate = simpleDateFormat.parse(row.getCell(5).getStringCellValue());
             Date birthday = simpleDateFormat.parse(row.getCell(6).getStringCellValue());
             String address = row.getCell(7).getStringCellValue();
@@ -142,5 +143,51 @@ public class UserService {
             System.out.println(user);
             userMapper.insert(user);
         }
+    }
+
+    public void downLoadXlsxByPoi(HttpServletResponse response) throws Exception{
+        // 创建对应的工作簿即工作表
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("用户数据");
+        // 设置列框  1为一个标准字母的 256分之一
+        sheet.setColumnWidth(0, 5 * 256);
+        sheet.setColumnWidth(1, 8 * 256);
+        sheet.setColumnWidth(2, 15 * 256);
+        sheet.setColumnWidth(3, 15 * 256);
+        sheet.setColumnWidth(4, 30 * 256);
+        // 填充标题行
+        String[] titles = new String[]{"编号", "姓名", "手机号", "入职日期", "现住址"};
+        XSSFRow row = sheet.createRow(0);
+        XSSFCell cell = null;
+        for (int i = 0; i < titles.length; i++) {
+            cell = row.createCell(i);
+            cell.setCellValue(titles[i]);
+        }
+        // 填充具体数据
+        List<User> users = userMapper.selectAll();
+        int rowIndex = 1;
+        XSSFRow dataRow = null;
+        for (User user : users) {
+            // 创建这一行
+            dataRow = sheet.createRow(rowIndex);
+            // 填充这一行
+            dataRow.createCell(0).setCellValue(user.getId());
+            dataRow.createCell(1).setCellValue(user.getUserName());
+            dataRow.createCell(2).setCellValue(user.getPhone());
+            dataRow.createCell(3).setCellValue(simpleDateFormat.format(user.getHireDate()));
+            dataRow.createCell(4).setCellValue(user.getAddress());
+            rowIndex++;
+        }
+        // 设置文件打开方式
+        String filename = "用户表-POI-Excel导出.xlsx";
+        response.setHeader("content-disposition","attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
+        // 设置文件类型
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        // 导出
+        ServletOutputStream outputStream = response.getOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+        outputStream.close();
+
     }
 }

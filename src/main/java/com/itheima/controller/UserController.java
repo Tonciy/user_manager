@@ -19,19 +19,25 @@ public class UserController {
     private UserService userService;
 
     @GetMapping("/findPage")
-    public List<User>  findPage(
-            @RequestParam(value = "page",defaultValue = "1") Integer page,
-            @RequestParam(value = "rows",defaultValue = "10") Integer pageSize){
-        return userService.findPage(page,pageSize);
+    public List<User> findPage(
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "rows", defaultValue = "10") Integer pageSize) {
+        return userService.findPage(page, pageSize);
     }
 
-    @GetMapping(value = "downLoadXlsByJxl",name = "通过jxl框架导出Excel")
-    public  void downLoadXlsByJxl(HttpServletResponse response) throws Exception{
+    @GetMapping(value = "downLoadXlsByJxl", name = "通过jxl框架导出Excel")
+    public void downLoadXlsByJxl(HttpServletResponse response) throws Exception {
         userService.downLoadXlsByJxl(response);
     }
-    @PostMapping(value = "uploadExcel",name = "上传Excel数据")
-    public  void uploadExcel(MultipartFile file) throws Exception{
+
+    @PostMapping(value = "uploadExcel", name = "上传Excel数据")
+    public void uploadExcel(MultipartFile file) throws Exception {
         userService.uploadExcel(file);
+    }
+
+    @GetMapping(value = "downLoadXlsxByPoi",name = "通过POI下载Excel")
+    public  void downLoadXlsxByPoi(HttpServletResponse response) throws Exception{
+        userService.downLoadXlsxByPoi(response);
     }
 
 
