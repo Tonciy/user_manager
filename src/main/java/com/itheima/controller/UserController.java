@@ -37,7 +37,8 @@ public class UserController {
 
     @GetMapping(value = "downLoadXlsxByPoi",name = "通过POI下载Excel")
     public  void downLoadXlsxByPoi(HttpServletResponse response) throws Exception{
-        userService.downLoadXlsxByPoi(response);
+//        userService.downLoadXlsxByPoi(response);
+        userService.downLoadXlsxByPoiWithStyle(response);
     }
 
 
