@@ -22,6 +22,7 @@ public class EntityUtils {
         boolean flag = field.isAccessible();
         field.setAccessible(true);
         Object o = field.get(object);
+        // 如果是日期类型，把值按照格式转化为字符串
         if(o instanceof Date){
           o = sdf.format(o);
         }

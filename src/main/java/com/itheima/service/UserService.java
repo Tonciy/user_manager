@@ -6,25 +6,30 @@ import com.itheima.mapper.UserMapper;
 import com.itheima.pojo.User;
 //import jxl.Workbook;
 //import org.apache.poi.ss.usermodel.Workbook;
+import com.itheima.utils.ExcelExportEngine;
 import jxl.Workbook;
 import jxl.write.Label;
 import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import org.apache.ibatis.annotations.Case;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ResourceUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 
+import javax.imageio.ImageIO;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -146,7 +151,7 @@ public class UserService {
         }
     }
 
-    public void downLoadXlsxByPoi(HttpServletResponse response) throws Exception{
+    public void downLoadXlsxByPoi(HttpServletResponse response) throws Exception {
         // 创建对应的工作簿即工作表
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("用户数据");
@@ -181,7 +186,7 @@ public class UserService {
         }
         // 设置文件打开方式
         String filename = "用户表-POI-Excel导出.xlsx";
-        response.setHeader("content-disposition","attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
+        response.setHeader("content-disposition", "attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
         // 设置文件类型
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         // 导出
@@ -192,7 +197,7 @@ public class UserService {
 
     }
 
-    public void downLoadXlsxByPoiWithStyle(HttpServletResponse response) throws  Exception {
+    public void downLoadXlsxByPoiWithStyle(HttpServletResponse response) throws Exception {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("带样式的用户表");
         XSSFRow titleRow = sheet.createRow(0);
@@ -296,7 +301,155 @@ public class UserService {
         }
         // 设置文件打开方式
         String filename = "用户表-POI-Excel导出.xlsx";
-        response.setHeader("content-disposition","attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
+        response.setHeader("content-disposition", "attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
+        // 设置文件类型
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        // 导出
+        ServletOutputStream outputStream = response.getOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+        outputStream.close();
+    }
+
+    /**
+     * 通过 Excel 模板进行导出
+     *
+     * @param response
+     */
+    public void downLoadXlsxByPoiWithExample(HttpServletResponse response) throws Exception {
+        // 1. 获取模板
+        File rootFile = new File(ResourceUtils.getURL("classpath:").getPath()); // 获取项目根目录
+        File templateFile = new File(rootFile, "/excel_template/userDataExample.xlsx");
+        XSSFWorkbook workbook = new XSSFWorkbook(templateFile);
+        System.out.println(workbook.getNumberOfSheets());
+        // 2. 获取内容单元格格式
+        XSSFCellStyle contentRowCellStyle = workbook.getSheetAt(1).getRow(0).getCell(0).getCellStyle();
+        // 3. 查找数据
+        List<User> users = userMapper.selectAll();
+        // 4. 填充单元格
+        XSSFSheet sheet = workbook.getSheetAt(0);
+        XSSFRow contentRow = null;
+        int rowIndex = 2;
+        for (User user : users) {
+            contentRow = sheet.createRow(rowIndex);
+            contentRow.setHeightInPoints(16);
+            XSSFCell cell0 = contentRow.createCell(0);
+            cell0.setCellStyle(contentRowCellStyle);
+            cell0.setCellValue(user.getId());
+            XSSFCell cell1 = contentRow.createCell(1);
+            cell1.setCellStyle(contentRowCellStyle);
+            cell1.setCellValue(user.getUserName());
+            XSSFCell cell2 = contentRow.createCell(2);
+            cell2.setCellStyle(contentRowCellStyle);
+            cell2.setCellValue(user.getPhone());
+            XSSFCell cell3 = contentRow.createCell(3);
+            cell3.setCellStyle(contentRowCellStyle);
+            cell3.setCellValue(user.getHireDate());
+            XSSFCell cell4 = contentRow.createCell(4);
+            cell4.setCellStyle(contentRowCellStyle);
+            cell4.setCellValue(user.getAddress());
+            rowIndex++;
+        }
+        workbook.removeSheetAt(1);
+        // 5. 导出
+        // 设置文件打开方式
+        String filename = "用户表-POI-Excel导出By模板.xlsx";
+        response.setHeader("content-disposition", "attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
+        // 设置文件类型
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        // 导出
+        ServletOutputStream outputStream = response.getOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+        outputStream.close();
+    }
+
+    /**
+     * 导出某个用户详细信息的Excel
+     *
+     * @param id
+     * @param response
+     */
+    public void downloadUserInfoByPoiWithTemplate(Long id, HttpServletResponse response) throws Exception {
+        // 1. 读取模板
+        File rootFile = new File(ResourceUtils.getURL("classpath:").getPath()); // 获取项目根目录
+        File templateFile = new File(rootFile, "/excel_template/userInfo.xlsx");
+        XSSFWorkbook workbook = new XSSFWorkbook(templateFile);
+        // 2. 查找用户数据
+        User user = userMapper.selectByPrimaryKey(id);
+        // 3. 填充用户信息到Excel中
+        XSSFSheet sheet = workbook.getSheetAt(0);
+        sheet.getRow(1).getCell(1).setCellValue(user.getUserName());
+        sheet.getRow(2).getCell(1).setCellValue(user.getPhone());
+        sheet.getRow(3).getCell(1).setCellValue(simpleDateFormat.format(user.getBirthday()));
+        sheet.getRow(4).getCell(1).setCellValue(user.getSalary());
+        sheet.getRow(5).getCell(1).setCellValue(user.getHireDate());
+        // 用公式计算司龄 CONCATENATE(DATEDIF(B6,TODAY(),"Y"),"年", DATEDIF(B6,TODAY(),"YM"),"月")
+        sheet.getRow(5).getCell(3).setCellFormula("CONCATENATE(DATEDIF(B6,TODAY(),\"Y\"),\"年\", DATEDIF(B6,TODAY(),\"YM\"),\"月\")");
+        sheet.getRow(6).getCell(1).setCellValue(user.getProvince());
+        sheet.getRow(6).getCell(3).setCellValue(user.getCity());
+        sheet.getRow(7).getCell(1).setCellValue(user.getAddress());
+
+        // 填充图片
+        // 3.1 先创建一个字节输出流
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        // 3.2 读取图片，放入了一个带有缓存区的图片类中
+        BufferedImage bufferedImage = ImageIO.read(new File(rootFile, user.getPhoto()));
+        // 计算文件后缀名
+        String extName = user.getPhoto().substring(user.getPhoto().lastIndexOf(".") +  1).toUpperCase();
+        // 3.3 b把图片写入到字节输出流中
+        ImageIO.write(bufferedImage, extName, byteArrayOutputStream);
+        // 3.4 Patriarch 控制图片的写入 / ClientAnchor 指定图片的位置
+        XSSFDrawing drawingPatriarch = sheet.createDrawingPatriarch();
+        // 左上角 偏移x  偏移y  右下角 偏移x 偏移 y  后面就是表格的位置
+        XSSFClientAnchor anchor = new XSSFClientAnchor(0, 0, 0, 0, 2, 1, 4, 5);
+        // 3.5 开始把图片写入到sheet指定的位置
+        int format = 0;
+        switch (extName){
+            case "JPG": {
+                format = XSSFWorkbook.PICTURE_TYPE_JPEG;
+            }
+            case "JPEG": {
+                format = XSSFWorkbook.PICTURE_TYPE_JPEG;
+            }
+            case "PNG": {
+                format = XSSFWorkbook.PICTURE_TYPE_PNG;
+            }
+        }
+        drawingPatriarch.createPicture(anchor, workbook.addPicture(byteArrayOutputStream.toByteArray(), format));
+
+
+        // 4. 导出
+        // 设置文件打开方式
+        String filename = "用户" + user.getUserName() + "信息.xlsx";
+        response.setHeader("content-disposition", "attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
+        // 设置文件类型
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        // 导出
+        ServletOutputStream outputStream = response.getOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+        outputStream.close();
+    }
+
+    /**
+     * 通过模板引擎动态生成Excel
+     * @param id
+     * @param response
+     */
+    public void downloadUserInfoByPoiWithTemplateEngine(Long id, HttpServletResponse response) throws Exception{
+        // 1. 读取模板
+        File rootFile = new File(ResourceUtils.getURL("classpath:").getPath()); // 获取项目根目录
+        File templateFile = new File(rootFile, "/excel_template/userInfo2.xlsx");
+        org.apache.poi.ss.usermodel.Workbook workbook = new XSSFWorkbook(templateFile);
+        // 2. 查找用户数据
+        User user = userMapper.selectByPrimaryKey(id);
+        // 3. 根据引擎填充数据
+        workbook = ExcelExportEngine.writeToExcel(user, workbook, rootFile.getPath() + user.getPhoto());
+        // 4. 导出
+        // 设置文件打开方式
+        String filename = "用户" + user.getUserName() + "信息.xlsx";
+        response.setHeader("content-disposition", "attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
         // 设置文件类型
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         // 导出

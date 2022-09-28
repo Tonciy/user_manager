@@ -38,8 +38,32 @@ public class UserController {
     @GetMapping(value = "downLoadXlsxByPoi",name = "通过POI下载Excel")
     public  void downLoadXlsxByPoi(HttpServletResponse response) throws Exception{
 //        userService.downLoadXlsxByPoi(response);
-        userService.downLoadXlsxByPoiWithStyle(response);
+        // 带样式的Excel下载
+//        userService.downLoadXlsxByPoiWithStyle(response);
+
+        // 使用模板生成导出Excel
+        userService.downLoadXlsxByPoiWithExample(response);
     }
+
+    @GetMapping(value = "download",name = "通过POI下载用户详细信息Excel")
+    public  void downloadUserInfoByPoiWithTemplate(Long id, HttpServletResponse response) throws Exception{
+//        通过模板来导出数据
+//        userService.downloadUserInfoByPoiWithTemplate(id, response);
+        // 通过模板引擎来动态性导出数据
+        userService.downloadUserInfoByPoiWithTemplateEngine(id, response);
+    }
+
+
+    /**
+     * 根据模板引擎来动态性导出Excel
+     * @param id
+     * @param response
+     * @throws Exception
+     */
+    public  void downloadUserInfoByPoiWithTemplateEngine(Long id, HttpServletResponse response) throws Exception{
+        userService.downloadUserInfoByPoiWithTemplateEngine(id, response);
+    }
+
 
 
 }
