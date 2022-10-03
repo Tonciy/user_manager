@@ -1,6 +1,6 @@
-package com.itheima.mapper;
+package cn.zeroeden.mapper;
 
-import com.itheima.pojo.User;
+import cn.zeroeden.pojo.User;
 import org.apache.ibatis.annotations.Select;
 import tk.mybatis.mapper.common.Mapper;
 

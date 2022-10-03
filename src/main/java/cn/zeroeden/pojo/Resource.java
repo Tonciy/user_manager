@@ -1,4 +1,4 @@
-package com.itheima.pojo;
+package cn.zeroeden.pojo;
 
 import lombok.Data;
 

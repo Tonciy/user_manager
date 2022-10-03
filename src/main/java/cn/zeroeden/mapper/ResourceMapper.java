@@ -1,7 +1,6 @@
-package com.itheima.mapper;
+package cn.zeroeden.mapper;
 
-import com.itheima.pojo.Resource;
-import com.itheima.pojo.User;
+import cn.zeroeden.pojo.Resource;
 import tk.mybatis.mapper.common.Mapper;
 
 public interface ResourceMapper extends Mapper<Resource> {
