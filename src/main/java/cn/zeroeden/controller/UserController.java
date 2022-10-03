@@ -68,6 +68,11 @@ public class UserController {
         userService.downLoadMillion( response);
     }
 
+    @GetMapping(value = "downLoadCSV",name = "通过CSV文件装载百万级数据")
+    public  void downLoadCSV(HttpServletResponse response) throws Exception{
+        userService.downLoadCSV( response);
+    }
+
 
 
 }

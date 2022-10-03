@@ -7,6 +7,7 @@ import com.github.pagehelper.PageHelper;
 import cn.zeroeden.pojo.User;
 //import jxl.Workbook;
 //import org.apache.poi.ss.usermodel.Workbook;
+import com.opencsv.CSVWriter;
 import jxl.Workbook;
 import jxl.write.Label;
 import jxl.write.WritableSheet;
@@ -28,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -517,5 +519,34 @@ public class UserService {
             workbook.close();
             outputStream.close();
         }
+    }
+
+    /**
+     * 利用CSV文件导出百万级数据
+     * @param response
+     */
+    public void downLoadCSV(HttpServletResponse response) throws  Exception{
+        ServletOutputStream outputStream = response.getOutputStream();
+        // 设置文件打开方式
+        String filename = "百万级用户数据导出.csv";
+        response.setHeader("content-disposition", "attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
+        // 设置文件类型
+        response.setContentType("text/csv");
+        CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(outputStream));
+        // 写入小标题
+        String[] titles = {"编号", "姓名", "手机号", "入职日期", "现住址"};
+        csvWriter.writeNext(titles);
+        int page = 1;
+        while (true){
+            List<User> userList = this.findPage(page++, 200000);
+            if(CollectionUtils.isEmpty(userList)){
+                break;
+            }
+            for (User user : userList) {
+                csvWriter.writeNext(new String[]{user.getId().toString(), user.getUserName(), user.getPhone(), simpleDateFormat.format(user.getHireDate()), user.getAddress()});
+            }
+            csvWriter.flush();
+        }
+        csvWriter.close();
     }
 }
