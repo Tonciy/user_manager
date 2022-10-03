@@ -15,9 +15,11 @@ import org.apache.ibatis.annotations.Case;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -457,5 +459,67 @@ public class UserService {
         workbook.write(outputStream);
         workbook.close();
         outputStream.close();
+    }
+
+    /**
+     * 百万级数据导出：
+     *  1. 肯定得使用高版本的Excel（一个sheet表装的行数多）
+     *  2. 使用 sax 方式解析Excel(XML)
+     * 限制：
+     *  1. 不能使用模板
+     *  2. 不能使用太多样式（要不然容易OOM）
+     * 注意：
+     *  * 这里用的表是 tb_user2，跟之前用的tb_user不一样
+     * @param response
+     */
+    public void downLoadMillion(HttpServletResponse response) throws Exception{
+        // 创建使用 sax 方式解析（XML）的workbook
+        org.apache.poi.ss.usermodel.Workbook workbook = new SXSSFWorkbook();
+        // 分页查询值
+        int page = 1;
+        // 表示当前数据集合的最后一条id值(也就是代表第几条)
+        int num = 0;
+        Sheet sheet = null;
+        String[] titles = {"编号", "姓名", "手机号", "入职日期", "现住址"};
+        int contentIndex = 1;
+        Row row = null;
+        while(true){
+            // 分页查询数据，要不然数据量太多OOM了
+            List<User> userList = this.findPage(page++, 10_0000);
+            if(CollectionUtils.isEmpty(userList)){
+                // 数据已经查完
+                break;
+            }
+
+            if(num % 100_0000 == 0){
+                // 一个sheet存 100_0000条数据，当num % 100_0000后为0，即说明要额外新建sheet表来存储了  0 100_0000 200_0000 300_0000 400_0000
+                sheet = workbook.createSheet("第" + (num / 100_0000 + 1) + "个工作表");
+                contentIndex = 1;
+                Row titleRow = sheet.createRow(0);
+                for (int i = 0; i < titles.length; i++) {
+                    titleRow.createCell(i).setCellValue(titles[i]);
+                }
+            }
+            for (User user : userList) {
+                row = sheet.createRow(contentIndex++);
+                row.createCell(0).setCellValue(user.getId());
+                row.createCell(1).setCellValue(user.getUserName());
+                row.createCell(2).setCellValue(user.getPhone());
+                row.createCell(3).setCellValue(simpleDateFormat.format(user.getHireDate()));
+                row.createCell(4).setCellValue(user.getAddress());
+                num++;
+            }
+            // 4. 导出
+            // 设置文件打开方式
+            String filename = "百万级用户数据导出.xlsx";
+            response.setHeader("content-disposition", "attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
+            // 设置文件类型
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            // 导出
+            ServletOutputStream outputStream = response.getOutputStream();
+            workbook.write(outputStream);
+            workbook.close();
+            outputStream.close();
+        }
     }
 }

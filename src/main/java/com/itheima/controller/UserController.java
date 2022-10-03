@@ -65,5 +65,11 @@ public class UserController {
     }
 
 
+    @GetMapping(value = "downLoadMillion",name = "利用POI（sax）导出百万级数据")
+    public  void downLoadMillion(HttpServletResponse response) throws Exception{
+        userService.downLoadMillion( response);
+    }
+
+
 
 }
