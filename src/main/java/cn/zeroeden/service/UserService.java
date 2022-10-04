@@ -1,6 +1,8 @@
 package cn.zeroeden.service;
 
+import cn.zeroeden.mapper.ResourceMapper;
 import cn.zeroeden.mapper.UserMapper;
+import cn.zeroeden.pojo.Resource;
 import cn.zeroeden.utils.ExcelExportEngine;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
@@ -14,8 +16,10 @@ import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.util.Units;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.*;
+import org.apache.poi.xwpf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -29,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -38,6 +43,8 @@ public class UserService {
 
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private ResourceMapper resourceMapper;
 
     // 处理日期转化
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -548,5 +555,108 @@ public class UserService {
             csvWriter.flush();
         }
         csvWriter.close();
+    }
+
+    public User findById(Long id) {
+        User user = userMapper.selectByPrimaryKey(id);
+        Resource resource = new Resource();
+        resource.setUserId(id);
+        List<Resource> resources = resourceMapper.select(resource);
+        user.setResourceList(resources);
+        return user;
+    }
+
+    /**
+     * 通过Id导出用户Word文档
+     * @param id
+     * @param response
+     */
+    public void downloadContract(Long id, HttpServletResponse response) throws Exception {
+        // 1. 读取模板
+        File rootFile = new File(ResourceUtils.getURL("classpath:").getPath()); // 获取项目根目录
+        File templateFile = new File(rootFile, "/word_template/contract_template.docx");
+        XWPFDocument word = new XWPFDocument(new FileInputStream(templateFile));
+        // 2. 查询当前用户数据并转为map
+        User user = this.findById(id);
+        HashMap<String, String> map = new HashMap<>();
+        map.put("userName",user.getUserName());
+        map.put("hireDate", simpleDateFormat.format(user.getHireDate()));
+        map.put("address", user.getAddress());
+        // 3. 替换数据
+        // 3.1 处理正文
+        List<XWPFParagraph> paragraphs = word.getParagraphs();
+        for (XWPFParagraph paragraph : paragraphs) {
+            List<XWPFRun> runs = paragraph.getRuns();
+            for (XWPFRun run : runs) {
+                String text = run.getText(0);
+                if(map.containsKey(text)){
+                    run.setText(map.get(text),0);
+                }
+            }
+        }
+        // 3.2 处理表格
+        List<Resource> resourceList = user.getResourceList();
+        XWPFTable xwpfTable = word.getTables().get(0);
+        XWPFTableRow row = xwpfTable.getRow(0);
+        int rowIndex = 1;
+        for (Resource resource : resourceList) {
+            copyRow(xwpfTable, row, rowIndex);
+            XWPFTableRow row1 = xwpfTable.getRow(rowIndex);
+            row1.getCell(0).setText(resource.getName());
+            row1.getCell(1).setText(resource.getPrice().toString());
+            row1.getCell(2).setText(resource.getNeedReturn()?"需要":"不需要");
+            // 设置图片
+            File imageFile = new File(rootFile, "/static" + resource.getPhoto());
+            setCellImage(row1.getCell(3), imageFile);
+            rowIndex++;
+        }
+        // 4. 导出Word
+        // 设置文件打开方式
+        String filename = "员工(" + user.getUserName() +")合同.docx";
+        response.setHeader("content-disposition", "attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
+        // 设置文件类型
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        // 导出
+        ServletOutputStream outputStream = response.getOutputStream();
+        word.write(outputStream);
+        word.close();
+        outputStream.close();
+    }
+
+    /**
+     * 为单元格填充图片
+     * @param cell
+     * @param imageFile
+     */
+    private void setCellImage(XWPFTableCell cell, File imageFile) {
+        XWPFRun run = cell.getParagraphs().get(0).createRun();
+        try (FileInputStream inputStream = new FileInputStream(imageFile)){
+            run.addPicture(inputStream, XWPFDocument.PICTURE_TYPE_JPEG, imageFile.getName(), Units.toEMU(100), Units.toEMU(50));
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 增加行并复制表格中的行样式
+     * @param xwpfTable  表格
+     * @param row         源行
+     * @param rowIndex    目标行索引
+     */
+    private void copyRow(XWPFTable xwpfTable, XWPFTableRow row, int rowIndex) {
+        XWPFTableRow targetRow = xwpfTable.insertNewTableRow(rowIndex);
+        // 设置行样式
+        targetRow.getCtRow().setTrPr(row.getCtRow().getTrPr());
+        List<XWPFTableCell> cells = row.getTableCells();
+        if(CollectionUtils.isEmpty(cells)){
+            return;
+        }
+        XWPFTableCell tableCell = null;
+        for (XWPFTableCell cell : cells) {
+            tableCell = targetRow.addNewTableCell();
+            // 附上单元格的样式及属性
+            tableCell.getCTTc().setTcPr(cell.getCTTc().getTcPr());
+            tableCell.getParagraphs().get(0).getCTP().setPPr(cell.getParagraphs().get(0).getCTP().getPPr());
+        }
     }
 }

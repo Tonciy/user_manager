@@ -33,8 +33,8 @@ public class UserController {
         userService.uploadExcel(file);
     }
 
-    @GetMapping(value = "downLoadXlsxByPoi",name = "通过POI下载Excel")
-    public  void downLoadXlsxByPoi(HttpServletResponse response) throws Exception{
+    @GetMapping(value = "downLoadXlsxByPoi", name = "通过POI下载Excel")
+    public void downLoadXlsxByPoi(HttpServletResponse response) throws Exception {
 //        userService.downLoadXlsxByPoi(response);
         // 带样式的Excel下载
 //        userService.downLoadXlsxByPoiWithStyle(response);
@@ -43,8 +43,8 @@ public class UserController {
         userService.downLoadXlsxByPoiWithExample(response);
     }
 
-    @GetMapping(value = "download",name = "通过POI下载用户详细信息Excel")
-    public  void downloadUserInfoByPoiWithTemplate(Long id, HttpServletResponse response) throws Exception{
+    @GetMapping(value = "download", name = "通过POI下载用户详细信息Excel")
+    public void downloadUserInfoByPoiWithTemplate(Long id, HttpServletResponse response) throws Exception {
 //        通过模板来导出数据
 //        userService.downloadUserInfoByPoiWithTemplate(id, response);
         // 通过模板引擎来动态性导出数据
@@ -54,25 +54,34 @@ public class UserController {
 
     /**
      * 根据模板引擎来动态性导出Excel
+     *
      * @param id
      * @param response
      * @throws Exception
      */
-    public  void downloadUserInfoByPoiWithTemplateEngine(Long id, HttpServletResponse response) throws Exception{
+    public void downloadUserInfoByPoiWithTemplateEngine(Long id, HttpServletResponse response) throws Exception {
         userService.downloadUserInfoByPoiWithTemplateEngine(id, response);
     }
 
 
-    @GetMapping(value = "downLoadMillion",name = "利用POI（sax）导出百万级数据")
-    public  void downLoadMillion(HttpServletResponse response) throws Exception{
-        userService.downLoadMillion( response);
+    @GetMapping(value = "downLoadMillion", name = "利用POI（sax）导出百万级数据")
+    public void downLoadMillion(HttpServletResponse response) throws Exception {
+        userService.downLoadMillion(response);
     }
 
-    @GetMapping(value = "downLoadCSV",name = "通过CSV文件装载百万级数据")
-    public  void downLoadCSV(HttpServletResponse response) throws Exception{
-        userService.downLoadCSV( response);
+    @GetMapping(value = "downLoadCSV", name = "通过CSV文件装载百万级数据")
+    public void downLoadCSV(HttpServletResponse response) throws Exception {
+        userService.downLoadCSV(response);
     }
 
+    @GetMapping(value = "/{id}", name = "通过Id查找用户信息")
+    public User findById(@PathVariable("id") Long id) throws Exception {
+        return userService.findById(id);
+    }
 
+    @GetMapping(value = "/downloadContract", name = "通过Id导出用户合同word文档")
+    public void downloadContract(Long id, HttpServletResponse response) throws Exception {
+        userService.downloadContract(id, response);
+    }
 
 }
