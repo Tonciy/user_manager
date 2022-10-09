@@ -84,4 +84,9 @@ public class UserController {
         userService.downloadContract(id, response);
     }
 
+    @GetMapping(value = "/downLoadWithEasyPOI", name = "通过EasyPOI框架导出Excel")
+    public void downLoadWithEasyPOI(HttpServletResponse response) throws Exception {
+        userService.downLoadWithEasyPOI(response);
+    }
+
 }

@@ -1,5 +1,8 @@
 package cn.zeroeden.service;
 
+import cn.afterturn.easypoi.excel.ExcelExportUtil;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
+import cn.afterturn.easypoi.excel.entity.enmus.ExcelType;
 import cn.zeroeden.mapper.ResourceMapper;
 import cn.zeroeden.mapper.UserMapper;
 import cn.zeroeden.pojo.Resource;
@@ -658,5 +661,24 @@ public class UserService {
             tableCell.getCTTc().setTcPr(cell.getCTTc().getTcPr());
             tableCell.getParagraphs().get(0).getCTP().setPPr(cell.getParagraphs().get(0).getCTP().getPPr());
         }
+    }
+
+    /**
+     * 通过EasyPOI框架导出Excel
+     * @param response
+     */
+    public void downLoadWithEasyPOI(HttpServletResponse response) throws Exception {
+        ExportParams exportParams = new ExportParams("员工信息列表", "数据", ExcelType.XSSF);
+        List<User> userList = userMapper.selectAll();
+        org.apache.poi.ss.usermodel.Workbook workbook = ExcelExportUtil.exportExcel(exportParams, User.class, userList);
+        // 设置文件打开方式
+        String filename = "用户数据的导出.xlsx";
+        response.setHeader("content-disposition", "attachment;filename=" + new String(filename.getBytes(), "ISO8859-1"));
+        // 设置文件类型
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        // 导出
+        ServletOutputStream outputStream = response.getOutputStream();
+        workbook.write(outputStream);
+
     }
 }
