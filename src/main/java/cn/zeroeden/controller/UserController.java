@@ -2,11 +2,18 @@ package cn.zeroeden.controller;
 
 import cn.zeroeden.pojo.User;
 import cn.zeroeden.service.UserService;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtils;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.StandardChartTheme;
+import org.jfree.data.category.DefaultCategoryDataset;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.awt.*;
+import java.io.File;
 import java.util.List;
 
 @RestController
@@ -88,5 +95,35 @@ public class UserController {
     public void downLoadWithEasyPOI(HttpServletResponse response) throws Exception {
         userService.downLoadWithEasyPOI(response);
     }
+
+    @GetMapping(value = "/jfreeChart", name = "通过JFreeChart框架导出图片")
+    public void jfreeChart(HttpServletResponse response) throws Exception {
+        // 1. 装备数据集
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        // y值，折线名称，x值
+        dataset.addValue(200, "公司", "2021年");
+        dataset.addValue(250, "公司", "2022年");
+        dataset.addValue(100, "公司", "2023年");
+        dataset.addValue(400, "公司", "2024年");
+        dataset.addValue(200, "企业", "2021年");
+        dataset.addValue(250, "企业", "2022年");
+        dataset.addValue(100, "企业", "2023年");
+        dataset.addValue(400, "企业", "2024年");
+        // 构造图表的主题样式
+        StandardChartTheme chartTheme = new StandardChartTheme("CN");
+        // 设置大标题的字体
+        chartTheme.setExtraLargeFont(new Font("宋体",Font.BOLD, 20));
+        // 设置图例的字体
+        chartTheme.setRegularFont(new Font("宋体", Font.BOLD, 15));
+        // 设置内容及x/y轴的字体
+        chartTheme.setLargeFont(new Font("宋体", Font.BOLD, 15));
+        ChartFactory.setChartTheme(chartTheme);
+        // 2. 构造折现图  大标题  x轴说明   y轴说明    数据集
+        JFreeChart chart = ChartFactory.createBarChart("入职人数","年份","人数", dataset);
+        // 3. 生成图--放到输出流中
+        ChartUtils.writeChartAsJPEG(response.getOutputStream(), chart, 600, 400);
+    }
+
+
 
 }
