@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no,minimal-ui" />
+    <title>highcharts图表报表</title>
+    <link rel="stylesheet" href="css/charts_demo.css">
+    <script src="js/vuejs-2.5.16.js"></script>
+    <script src="js/axios-0.18.0.js"></script>
+    <script src="js/highcharts.js"></script>
+    <script src="js/highcharts-3d.js"></script>
+    <script src="js/highcharts-more.js"></script>
+    <script src="js/drilldown.js"></script>
+
+
+</head>
+<body>
+<div id="app" class="my-box">
+    <div class="my-box-left">
+        <button @click="columnCharts">统计各部门人数</button> <br/> <br/>
+        <button @click="lineCharts">月份入职人数统计</button> <br/> <br/>
+        <button @click="pieCharts">员工地方来源统计</button> <br/> <br/>
+    </div>
+    <div class="my-box-right">
+        <div id="container" style="height:450px;"></div>
+    </div>
+</div>
+</body>
+<script>
+    new Vue({
+        el:"#app",
+        data:{},
+        methods: {
+            columnCharts() {
+
+            },
+            lineCharts(){
+
+            },
+            pieCharts(){
+
+            }
+        }
+    });
+</script>
+</html>
